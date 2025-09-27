@@ -166,6 +166,7 @@ public class FMODRadioStreamer : MonoBehaviour
             isPlaying = true;
             isMuted = false;
             UnityEngine.Debug.Log("Stream started successfully");
+            OnMuteStateChanged?.Invoke(isMuted);
         }
         else
         {

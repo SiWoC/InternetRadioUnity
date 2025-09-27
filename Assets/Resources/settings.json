@@ -1,6 +1,4 @@
 {
-    "wifiSSID": "someSSID",
-    "wifiPassword": "somePassword",
     "station": [
         {
             "name": "Q-Music",

@@ -6,8 +6,6 @@ using System.Collections.Generic;
 [System.Serializable]
 public class SettingsData
 {
-    public string wifiSSID;
-    public string wifiPassword;
     public RadioStation[] station;
 }
 
@@ -16,8 +14,6 @@ public class MainSceneController : MonoBehaviour
     [Header("UI References")]
     public Button muteButton;
     public TextMeshProUGUI muteButtonText;
-    public Button nextStationButton;
-    public Button previousStationButton;
     public TextMeshProUGUI stationNameText;
     public TextMeshProUGUI statusText;
     
@@ -35,7 +31,10 @@ public class MainSceneController : MonoBehaviour
     
     void Awake()
     {
-        SetupDefaultStations();
+        // Prevent device from sleeping while app is running
+        Screen.sleepTimeout = SleepTimeout.NeverSleep;
+        
+        SetupStations();
         SetupMuteButton();
     }
     
@@ -56,7 +55,7 @@ public class MainSceneController : MonoBehaviour
         }
     }
     
-    void SetupDefaultStations()
+    void SetupStations()
     {
         // Load stations from JSON file
         TextAsset jsonFile = Resources.Load<TextAsset>("settings");
@@ -222,39 +221,18 @@ public class MainSceneController : MonoBehaviour
     void SetupMuteButton()
     {
         // Subscribe to mute state changes
-        if (radioStreamer != null)
-        {
-            radioStreamer.OnMuteStateChanged += UpdateMuteButtonText;
-        }
+        radioStreamer.OnMuteStateChanged += UpdateMuteButton;
         
         // Set initial button text
-        UpdateMuteButtonText(radioStreamer.isMuted);
+        UpdateMuteButton(radioStreamer.isMuted);
     }
     
-    void UpdateMuteButtonText(bool isMuted)
+    void UpdateMuteButton(bool isMuted)
     {
         if (muteButtonText != null)
         {
             muteButtonText.text = isMuted ? "Unmute" : "Mute";
         }
-    }
-    
-    public void NextStation()
-    {
-        if (radioStations.Count == 0) return;
-        
-        currentStationIndex = (currentStationIndex + 1) % radioStations.Count;
-        SelectStation(currentStationIndex);
-        
-    }
-    
-    public void PreviousStation()
-    {
-        if (radioStations.Count == 0) return;
-        
-        currentStationIndex = (currentStationIndex - 1 + radioStations.Count) % radioStations.Count;
-        SelectStation(currentStationIndex);
-        
     }
     
     void Update()
