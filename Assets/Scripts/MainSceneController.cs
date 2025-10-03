@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using UnityEngine.InputSystem;
 using System.Collections.Generic;
 
 [System.Serializable]
@@ -13,9 +14,9 @@ public class MainSceneController : MonoBehaviour
 {
     [Header("UI References")]
     public Button muteButton;
-    public TextMeshProUGUI muteButtonText;
+    public GameObject muteButtonPlaying;
+    public GameObject muteButtonMuted;
     public TextMeshProUGUI stationNameText;
-    public TextMeshProUGUI statusText;
     
     [Header("Station List")]
     public Transform stationListParent;
@@ -26,6 +27,7 @@ public class MainSceneController : MonoBehaviour
     
     [Header("Components")]
     public FMODRadioStreamer radioStreamer;
+    public ScreensaverController screensaverController;
     
     private int currentStationIndex = 0;
     
@@ -51,7 +53,7 @@ public class MainSceneController : MonoBehaviour
         // Start playing the first station automatically
         if (radioStations.Count > 0)
         {
-            SelectStation(0);
+            SelectStation(currentStationIndex);
         }
     }
     
@@ -114,74 +116,43 @@ public class MainSceneController : MonoBehaviour
     
     void CreateStationButtons()
     {
-        if (stationListParent == null || stationButtonPrefab == null) return;
-        
         // Clear existing buttons
         foreach (Transform child in stationListParent)
         {
             Destroy(child.gameObject);
         }
-        
+
+        string currentStationName = Settings.GetCurrentStationName();
+
         // Create buttons for each station
         for (int i = 0; i < radioStations.Count; i++)
         {
-            int stationIndex = i; // Capture for closure
+            int stationIndex = i; // Capture for usage in SelectStation lambda
             GameObject buttonObj = Instantiate(stationButtonPrefab, stationListParent);
             Button button = buttonObj.GetComponent<Button>();
             TextMeshProUGUI buttonText = buttonObj.GetComponentInChildren<TextMeshProUGUI>();
             UnityEngine.UI.Image buttonImage = buttonObj.GetComponent<UnityEngine.UI.Image>();
             
             // Try to load station image
-            if (!string.IsNullOrEmpty(radioStations[i].image))
+            Sprite stationSprite = CreateStationSprite(radioStations[i]);
+            if (stationSprite != null)
             {
-                // Remove leading slash if present for Resources.Load
-                string imagePath = radioStations[i].image.StartsWith("/") ? 
-                    radioStations[i].image.Substring(1) : radioStations[i].image;
-                
-                // Remove .png extension for Resources.Load
-                if (imagePath.EndsWith(".png"))
-                {
-                    imagePath = imagePath.Substring(0, imagePath.Length - 4);
-                }
-                
-                Texture2D stationTexture = Resources.Load<Texture2D>(imagePath);
-                if (stationTexture != null && buttonImage != null)
-                {
-                    // Convert texture to sprite
-                    Sprite stationSprite = Sprite.Create(stationTexture, 
-                        new Rect(0, 0, stationTexture.width, stationTexture.height), 
-                        new Vector2(0.5f, 0.5f));
-                    buttonImage.sprite = stationSprite;
-                    
-                    // Hide text when image is available
-                    if (buttonText != null)
-                    {
-                        buttonText.gameObject.SetActive(false);
-                    }
-                }
-                else
-                {
-                    // Image not found, fall back to text
-                    if (buttonText != null)
-                    {
-                        buttonText.text = radioStations[i].name;
-                        buttonText.gameObject.SetActive(true);
-                    }
-                }
+                buttonImage.sprite = stationSprite;
+                // Hide text when image is available
+                buttonText.gameObject.SetActive(false);
             }
             else
             {
-                // No image path, use text
-                if (buttonText != null)
-                {
-                    buttonText.text = radioStations[i].name;
-                    buttonText.gameObject.SetActive(true);
-                }
+                // Image not found or no image path, use text
+                buttonText.text = radioStations[i].name;
+                buttonText.gameObject.SetActive(true);
             }
             
-            if (button != null)
+            button.onClick.AddListener(() => SelectStation(stationIndex));
+
+            if (radioStations[i].name == currentStationName)
             {
-                button.onClick.AddListener(() => SelectStation(stationIndex));
+                currentStationIndex = i;
             }
         }
         
@@ -192,16 +163,33 @@ public class MainSceneController : MonoBehaviour
     void EnsureContentWidthForScrolling()
     {
         RectTransform contentRect = stationListParent.GetComponent<RectTransform>();
+        GridLayoutGroup gridLayout = contentRect.GetComponent<GridLayoutGroup>();
         
         // Let the Grid Layout Group calculate the natural size first
         LayoutRebuilder.ForceRebuildLayoutImmediate(contentRect);
         
-        // Get the current width and add extra space for scrolling
-        float currentWidth = contentRect.sizeDelta.x;
-        float extraWidth = 400f; // Add extra width to ensure scrolling
+        // Calculate required width based on grid layout with 2 rows
+        int stationCount = radioStations.Count;
+        float cellWidth = gridLayout.cellSize.x;
+        float spacing = gridLayout.spacing.x;
+        
+        // Calculate number of columns needed (3 rows, so stations per row)
+        int columns = Mathf.CeilToInt(stationCount / 3f);
+        
+        // Calculate total width: number of columns * cell width + spacing between columns
+        float totalWidth = (columns * cellWidth) + ((columns - 1) * spacing);
+        
+        // Add some extra padding for better scrolling experience
+        float extraPadding = 100f;
+        float finalWidth = totalWidth + extraPadding;
+        
+        // For anchored content, we need to set the sizeDelta to the difference
+        // between desired size and current anchored size
+        float currentAnchoredWidth = contentRect.rect.width;
+        float widthDifference = finalWidth - currentAnchoredWidth;
         
         // Set the content width to ensure scrolling is enabled
-        contentRect.sizeDelta = new Vector2(currentWidth + extraWidth, contentRect.sizeDelta.y);
+        contentRect.sizeDelta = new Vector2(widthDifference, contentRect.sizeDelta.y);
     }
     
     void SelectStation(int stationIndex)
@@ -209,8 +197,11 @@ public class MainSceneController : MonoBehaviour
         if (stationIndex < 0 || stationIndex >= radioStations.Count) return;
 
         currentStationIndex = stationIndex;
-        radioStreamer.SetStreamUrl(radioStations[currentStationIndex].url);
-        radioStreamer.PlayStream();
+        radioStreamer.PlayStream(radioStations[currentStationIndex].url);
+        Settings.SetCurrentStationName(radioStations[currentStationIndex].name);
+        
+        // Update screensaver with current station image
+        UpdateScreensaverStationImage();
     }
 
     public void ToggleMute()
@@ -224,26 +215,83 @@ public class MainSceneController : MonoBehaviour
         radioStreamer.OnMuteStateChanged += UpdateMuteButton;
         
         // Set initial button text
-        UpdateMuteButton(radioStreamer.isMuted);
+        UpdateMuteButton(radioStreamer.IsMuted());
     }
     
     void UpdateMuteButton(bool isMuted)
     {
-        if (muteButtonText != null)
-        {
-            muteButtonText.text = isMuted ? "Unmute" : "Mute";
-        }
+        muteButtonMuted.SetActive(isMuted);
+        muteButtonPlaying.SetActive(!isMuted);
     }
     
     void Update()
     {
-        // Update UI elements in real-time
-        if (radioStreamer != null)
+        if (stationNameText != null && radioStations.Count > 0)
         {
-            if (stationNameText != null && radioStations.Count > 0)
+            stationNameText.text = radioStations[currentStationIndex].name;
+        }
+        
+        DetectUITouch();
+    }
+    
+    void DetectUITouch()
+    {
+        
+        // Check for touch input (Android) using new Input System
+        if (Touchscreen.current != null && Touchscreen.current.touches.Count > 0)
+        {
+            var touch = Touchscreen.current.touches[0];
+            if (touch.press.wasPressedThisFrame)
             {
-                stationNameText.text = radioStations[currentStationIndex].name;
+                screensaverController.ResetTimer();
             }
         }
+        
+        // Check for mouse input (editor/desktop testing) using new Input System
+        if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
+        {
+            screensaverController.ResetTimer();
+        }
+    }
+    
+    Sprite CreateStationSprite(RadioStation station)
+    {
+        if (string.IsNullOrEmpty(station.image))
+        {
+            return null;
+        }
+        
+        // Remove leading slash if present for Resources.Load
+        string imagePath = station.image.StartsWith("/") ? 
+            station.image.Substring(1) : station.image;
+        
+        // Remove .png extension for Resources.Load
+        if (imagePath.EndsWith(".png"))
+        {
+            imagePath = imagePath.Substring(0, imagePath.Length - 4);
+        }
+        
+        Texture2D stationTexture = Resources.Load<Texture2D>(imagePath);
+        if (stationTexture != null)
+        {
+            // Convert texture to sprite
+            return Sprite.Create(stationTexture, 
+                new Rect(0, 0, stationTexture.width, stationTexture.height), 
+                new Vector2(0.5f, 0.5f));
+        }
+        
+        return null;
+    }
+    
+    void UpdateScreensaverStationImage()
+    {
+        Sprite stationSprite = CreateStationSprite(radioStations[currentStationIndex]);
+        screensaverController.SetStationImage(stationSprite);
+    }
+
+    public void OnExit()
+    {
+        Debug.Log("Quitting");
+        Application.Quit();
     }
 }

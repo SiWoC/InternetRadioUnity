@@ -6,18 +6,13 @@ using FMODUnity;
 
 public class FMODRadioStreamer : MonoBehaviour
 {
-    [Header("FMOD Settings")]
-    public string streamUrl = "";
-    
-    
-    
-    // FMOD variables
+    private string streamUrl = "";
+    private bool isMuted = false;
     private FMOD.Sound sound;
     private FMOD.Channel channel;
     private FMOD.ChannelGroup masterChannelGroup;
     private FMOD.System system;
     private bool isPlaying = false;
-    public bool isMuted = false;
     private bool isInitialized = false;
     private bool hasSound = false;
     private bool hasChannel = false;
@@ -49,7 +44,13 @@ public class FMODRadioStreamer : MonoBehaviour
     {
         StopStream();
     }
-
+    
+    void OnApplicationQuit()
+    {
+        // App is being quit - ensure complete cleanup
+        StopStream();
+    }
+    
     void InitializeFMOD()
     {
         try
@@ -66,8 +67,18 @@ public class FMODRadioStreamer : MonoBehaviour
             isInitialized = false;
         }
     }
-    
-    
+
+
+    public void PlayStream(string url)
+    {
+        if (isPlaying)
+        {
+            StopStream();
+        }
+        streamUrl = url;
+        PlayStream();
+    }
+
     public void PlayStream()
     {
 
@@ -214,13 +225,8 @@ public class FMODRadioStreamer : MonoBehaviour
     }
     
     
-    public void SetStreamUrl(string url)
+    public bool IsMuted()
     {
-        if (isPlaying)
-        {
-            StopStream();
-        }
-        streamUrl = url;
+        return isMuted;
     }
-
 }

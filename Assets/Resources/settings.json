@@ -1,6 +1,21 @@
 {
     "station": [
         {
+            "name": "Kink",
+            "url": "https://playerservices.streamtheworld.com/api/livestream-redirect/KINK.mp3",
+            "image": "/images/kink.png"
+        },
+        {
+            "name": "Kink 80's",
+            "url": "https://playerservices.streamtheworld.com/api/livestream-redirect/KINK_DNA.mp3",
+            "image": "/images/kink-80s.png"
+        },
+        {
+            "name": "Kink 90's",
+            "url": "https://playerservices.streamtheworld.com/api/livestream-redirect/KINK_90S.mp3",
+            "image": "/images/kink-90s.png"
+        },
+        {
             "name": "Q-Music",
             "url": "https://stream.qmusic.nl/qmusic/mp3",
             "image": "/images/qmusic.png"
@@ -35,6 +50,16 @@
             "url": "https://playerservices.streamtheworld.com/api/livestream-redirect/TLPSTR09.mp3",
             "image": "/images/radio-538-non-stop.png"
         },
+		{
+			"name": "Joe",
+			"url": "https://stream.joe.nl/joe/mp3",
+            "image": "/images/joe.png"
+		},
+		{
+			"name": "Joe Non-Stop",
+			"url": "https://stream.joe.nl/nonstop/mp3",
+            "image": "/images/joe-nonstop.png"
+		},
 		{
 			"name": "ABC Triple J NSW",
 			"url": "https://live-radio01.mediahubaustralia.com/2TJW/mp3/",
