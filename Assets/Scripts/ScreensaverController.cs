@@ -91,16 +91,100 @@ public class ScreensaverController : MonoBehaviour
         // Update position
         Vector2 newPosition = stationImageRect.anchoredPosition + currentVelocity * Time.deltaTime;
         
-        // Bounce off edges - simply reverse direction, keep same speed
-        if (newPosition.x > screenBounds.x || newPosition.x < -screenBounds.x)
+        // Bounce off edges
+        // Hitting East wall
+        if (newPosition.x > screenBounds.x)
         {
-            currentVelocity.x = -currentVelocity.x;
+            float currentSpeed = currentVelocity.magnitude;
+            float randomAngle;
+            bool goingNorth = (currentVelocity.y > 0);
+            if (goingNorth) // North East
+            {
+                // continue North West
+                randomAngle = Random.Range(90f, 180f) * Mathf.Deg2Rad;
+            }
+            else // South East
+            {
+                // continue South West
+                randomAngle = Random.Range(180f, 270f) * Mathf.Deg2Rad;
+            }
+
+            currentVelocity = new Vector2(
+                Mathf.Cos(randomAngle) * currentSpeed,
+                Mathf.Sin(randomAngle) * currentSpeed
+            );
             newPosition.x = Mathf.Clamp(newPosition.x, -screenBounds.x, screenBounds.x);
         }
         
-        if (newPosition.y > screenBounds.y || newPosition.y < -screenBounds.y)
+        // Hitting West wall
+        if (newPosition.x < -screenBounds.x)
         {
-            currentVelocity.y = -currentVelocity.y;
+            float currentSpeed = currentVelocity.magnitude;
+            float randomAngle;
+            bool goingNorth = (currentVelocity.y > 0);
+            if (goingNorth) // North West
+            {
+                // continue North East
+                randomAngle = Random.Range(0f, 90f) * Mathf.Deg2Rad;
+            }
+            else // South West
+            {
+                // continue South East
+                randomAngle = Random.Range(270f, 360f) * Mathf.Deg2Rad;
+            }
+
+            currentVelocity = new Vector2(
+                Mathf.Cos(randomAngle) * currentSpeed,
+                Mathf.Sin(randomAngle) * currentSpeed
+            );
+            newPosition.x = Mathf.Clamp(newPosition.x, -screenBounds.x, screenBounds.x);
+        }
+        
+        // Hitting North wall
+        if (newPosition.y > screenBounds.y)
+        {
+            float currentSpeed = currentVelocity.magnitude;
+            float randomAngle;
+            bool goingEast = (currentVelocity.x > 0);
+            if (goingEast) // North East
+            {
+                // continue South East
+                randomAngle = Random.Range(270f, 360f) * Mathf.Deg2Rad;
+            }
+            else // North West
+            {
+                // continue South West
+                randomAngle = Random.Range(180f, 270f) * Mathf.Deg2Rad;
+            }
+
+            currentVelocity = new Vector2(
+                Mathf.Cos(randomAngle) * currentSpeed,
+                Mathf.Sin(randomAngle) * currentSpeed
+            );
+            newPosition.y = Mathf.Clamp(newPosition.y, -screenBounds.y, screenBounds.y);
+        }
+        
+        // Hitting South wall
+        if (newPosition.y < -screenBounds.y)
+        {
+            float currentSpeed = currentVelocity.magnitude;
+            float randomAngle;
+            bool goingEast = (currentVelocity.x > 0);
+            if (goingEast) // South East
+            {
+                // continue North East
+                randomAngle = Random.Range(0f, 90f) * Mathf.Deg2Rad;
+            }
+            else // South West
+            {
+                // continue North West
+                randomAngle = Random.Range(90f, 180f) * Mathf.Deg2Rad;
+            }
+
+            currentVelocity = new Vector2(
+                Mathf.Cos(randomAngle) * currentSpeed,
+                Mathf.Sin(randomAngle) * currentSpeed
+            );
             newPosition.y = Mathf.Clamp(newPosition.y, -screenBounds.y, screenBounds.y);
         }
         
