@@ -19,11 +19,6 @@ public class FMODRadioStreamer : MonoBehaviour
     
     public System.Action<bool> OnMuteStateChanged;
     
-    void Awake()
-    {
-        InitializeFMOD();
-    }
-
     void Update()
     {
         // Update FMOD system
@@ -49,8 +44,13 @@ public class FMODRadioStreamer : MonoBehaviour
     {
         // App is being quit - ensure complete cleanup
         StopStream();
+#if !UNITY_EDITOR
+        UnityEngine.Debug.Log("FMOD CoreSystem.release()");
+        RuntimeManager.CoreSystem.release();
+#endif
+
     }
-    
+
     void InitializeFMOD()
     {
         try
@@ -79,7 +79,7 @@ public class FMODRadioStreamer : MonoBehaviour
         PlayStream();
     }
 
-    public void PlayStream()
+    void PlayStream()
     {
 
         if (!isInitialized)
@@ -111,10 +111,8 @@ public class FMODRadioStreamer : MonoBehaviour
         UnityEngine.Debug.Log("Loading stream: " + streamUrl);
         
         // Create sound from URL
-        string urlToLoad = streamUrl;
-
-        FMOD.RESULT result = system.createSound(urlToLoad, 
-            MODE.CREATESTREAM | MODE.NONBLOCKING | MODE.LOOP_NORMAL, 
+        FMOD.RESULT result = system.createSound(streamUrl, 
+            MODE.CREATESTREAM, 
             out sound);
         
         UnityEngine.Debug.Log("CreateSound result: " + result);
@@ -136,9 +134,8 @@ public class FMODRadioStreamer : MonoBehaviour
         // Wait for sound to load
         float timeout = 15f;
         float elapsed = 0f;
-        bool loadingComplete = false;
         
-        while (sound.getOpenState(out OPENSTATE openState, out _, out _, out _) == FMOD.RESULT.OK && !loadingComplete)
+        while (sound.getOpenState(out OPENSTATE openState, out _, out _, out _) == FMOD.RESULT.OK)
         {
             if (elapsed >= timeout)
             {
@@ -154,7 +151,6 @@ public class FMODRadioStreamer : MonoBehaviour
             if (openState == OPENSTATE.READY)
             {
                 UnityEngine.Debug.Log("Stream loaded successfully!");
-                loadingComplete = true;
                 break;
             }
             
@@ -166,18 +162,19 @@ public class FMODRadioStreamer : MonoBehaviour
             elapsed += Time.deltaTime;
             yield return null;
         }
-        
+
         // Play the sound
         result = system.playSound(sound, masterChannelGroup, false, out channel);
         
         if (result == FMOD.RESULT.OK)
         {
-            channel.setVolume(1f);
+            channel.setPriority(0);
             hasChannel = true;
             isPlaying = true;
             isMuted = false;
             UnityEngine.Debug.Log("Stream started successfully");
             OnMuteStateChanged?.Invoke(isMuted);
+            
         }
         else
         {
@@ -190,15 +187,21 @@ public class FMODRadioStreamer : MonoBehaviour
     {
         if (isMuted)
         {
-            //masterChannelGroup.setMute(false);
-            PlayStream();
+            WriteChannelState("before setMute(false)");
+            FMOD.RESULT muteResult = channel.setMute(false);
+            UnityEngine.Debug.Log("setMute(false) result: " + muteResult);
+            WriteChannelState("after setMute(false)");
+            //PlayStream();
             isMuted = false;
             UnityEngine.Debug.Log("Stream unmuted");
         }
         else
         {
-            //masterChannelGroup.setMute(true);
-            StopStream();
+            WriteChannelState("before setMute(true)");
+            FMOD.RESULT muteResult = channel.setMute(true);
+            UnityEngine.Debug.Log("setMute(true) result: " + muteResult);
+            WriteChannelState("after setMute(true)");
+            //StopStream();
             isMuted = true;
             UnityEngine.Debug.Log("Stream muted");
         }
@@ -211,17 +214,18 @@ public class FMODRadioStreamer : MonoBehaviour
         {
             channel.stop();
             hasChannel = false;
+            UnityEngine.Debug.Log("Channel stopped");
         }
-        
+
         if (hasSound)
         {
             sound.release();
             hasSound = false;
+            UnityEngine.Debug.Log("Sound released");
         }
-        
+
         isPlaying = false;
         isMuted = false;
-        UnityEngine.Debug.Log("Stream stopped");
     }
     
     
@@ -229,4 +233,13 @@ public class FMODRadioStreamer : MonoBehaviour
     {
         return isMuted;
     }
+    
+    private void WriteChannelState(string context)
+    {
+        channel.isPlaying(out bool playing);
+        channel.getPaused(out bool paused);
+        channel.isVirtual(out bool isVirtual);
+        UnityEngine.Debug.Log("Channel " + context + ": isPlaying=" + playing + ", getPaused=" + paused + ", isVirtual=" + isVirtual);
+    }
+    
 }
