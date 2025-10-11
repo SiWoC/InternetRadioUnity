@@ -16,8 +16,14 @@ public class MainSceneController : MonoBehaviour
     public Button muteButton;
     public GameObject muteButtonPlaying;
     public GameObject muteButtonMuted;
+    public GameObject remoteButton;
+    public GameObject playerButton;
     public TextMeshProUGUI stationNameText;
-    
+    public TextMeshProUGUI ipAddressText;
+    public GameObject settingsPanel;
+    public TMP_InputField playerIPAddressInputField;
+    public TextMeshProUGUI settingsTestResultText;
+
     [Header("Station List")]
     public Transform stationListParent;
     public GameObject stationButtonPrefab;
@@ -49,12 +55,23 @@ public class MainSceneController : MonoBehaviour
         }
         
         CreateStationButtons();
-        
-        // Start playing the first station automatically
-        if (radioStations.Count > 0)
+        settingsPanel.SetActive(false);
+
+        if (Settings.GetOperatingMode() == Settings.OperatingMode.Player)
         {
-            SelectStation(currentStationIndex);
+            remoteButton.SetActive(true);
+            playerButton.SetActive(false);
+            if (radioStations.Count > 0)
+            {
+                SelectStation(currentStationIndex);
+            }
+        } else
+        {
+            remoteButton.SetActive(false);
+            playerButton.SetActive(true);
         }
+
+        ipAddressText.text = Utils.GetLocalIPAddress();
     }
     
     void SetupStations()
@@ -289,6 +306,69 @@ public class MainSceneController : MonoBehaviour
         screensaverController.SetStationImage(stationSprite);
     }
 
+    public void OnRemote()
+    {
+        // No ip-address yet configured? and  can we connect to the player
+        if (Settings.GetPlayerIPAddress().Length == 0 || !TestConnectionToPlayer())
+        {
+            OnSettings();
+        }
+
+        // switching from being the Remote to being the Player
+        if (TestConnectionToPlayer())
+        {
+            Settings.SetOperatingMode(Settings.OperatingMode.Remote);
+            remoteButton.SetActive(false);
+            playerButton.SetActive(true);
+        }
+    }
+
+    public void OnPlayer()
+    {
+        // switching from being the Remote to being the Player
+        Settings.SetOperatingMode(Settings.OperatingMode.Player);
+        remoteButton.SetActive(true);
+        playerButton.SetActive(false);
+        if (radioStations.Count > 0)
+        {
+            SelectStation(currentStationIndex);
+        }
+    }
+
+    public void OnSettings()
+    {
+        playerIPAddressInputField.text = Settings.GetPlayerIPAddress();
+        settingsTestResultText.text = "";
+        settingsPanel.SetActive(true);
+    }
+
+    public void OnSettingsTest()
+    {
+        if (TestConnectionToPlayer())
+        {
+            settingsTestResultText.text = "OK";
+            Settings.SetPlayerIPAddress(playerIPAddressInputField.text);
+        }
+        else
+        {
+            settingsTestResultText.text = "Error";
+        }
+    }
+
+    bool TestConnectionToPlayer()
+    {
+        return true;
+    }
+
+    public void OnSettingsBack()
+    {
+        if (TestConnectionToPlayer())
+        {
+            Settings.SetPlayerIPAddress(playerIPAddressInputField.text);
+        }
+        settingsPanel.SetActive(false);
+    }
+
     public void OnExit()
     {
         Debug.Log("Quitting");
@@ -298,4 +378,5 @@ public class MainSceneController : MonoBehaviour
         Application.Quit(); 
 #endif
     }
+
 }

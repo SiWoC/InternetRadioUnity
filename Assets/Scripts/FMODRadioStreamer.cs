@@ -48,7 +48,6 @@ public class FMODRadioStreamer : MonoBehaviour
         UnityEngine.Debug.Log("FMOD CoreSystem.release()");
         RuntimeManager.CoreSystem.release();
 #endif
-
     }
 
     void InitializeFMOD()

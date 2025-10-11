@@ -8,6 +8,7 @@ public class ScreensaverController : MonoBehaviour
 
     public Button screensaverButton; // Full-screen button for touch detection
     public Image stationImage; // Bouncing station image (child of button)
+    public GameObject settingsPanel;
 
     private float inactivityTimeout = 10f; // seconds before screensaver activates
     private float bounceSpeed = 200f;
@@ -34,7 +35,7 @@ public class ScreensaverController : MonoBehaviour
     void Update()
     {
         // Check if screensaver should activate
-        if (!isScreensaverActive && Time.time - lastInputTime > inactivityTimeout)
+        if (!isScreensaverActive && Time.time - lastInputTime > inactivityTimeout && !settingsPanel.activeSelf)
         {
             EnterScreensaver();
         }
