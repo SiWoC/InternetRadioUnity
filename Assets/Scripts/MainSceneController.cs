@@ -34,8 +34,12 @@ public class MainSceneController : MonoBehaviour
     [Header("Components")]
     public FMODRadioStreamer radioStreamer;
     public ScreensaverController screensaverController;
+    public NetworkManager networkManager;
     
     private int currentStationIndex = 0;
+    private float statePollTimer = 0f;
+    private const float STATE_POLL_INTERVAL = 2.5f; // seconds
+    private bool isRemoteMode = false;
     
     void Awake()
     {
@@ -54,6 +58,12 @@ public class MainSceneController : MonoBehaviour
             return;
         }
         
+        if (networkManager == null)
+        {
+            Debug.LogError("NetworkManager not assigned! Please assign it in the Inspector.");
+            return;
+        }
+        
         CreateStationButtons();
         settingsPanel.SetActive(false);
 
@@ -61,6 +71,12 @@ public class MainSceneController : MonoBehaviour
         {
             remoteButton.SetActive(true);
             playerButton.SetActive(false);
+            isRemoteMode = false;
+            
+            // Start TCP listener for remote control
+            networkManager.StartListener();
+            SetupNetworkCallbacks();
+            
             if (radioStations.Count > 0)
             {
                 SelectStation(currentStationIndex);
@@ -69,6 +85,13 @@ public class MainSceneController : MonoBehaviour
         {
             remoteButton.SetActive(false);
             playerButton.SetActive(true);
+            isRemoteMode = true;
+            
+            // Immediately poll for initial state from player
+            if (!string.IsNullOrEmpty(Settings.GetPlayerIPAddress()))
+            {
+                PollPlayerState();
+            }
         }
 
         ipAddressText.text = Utils.GetLocalIPAddress();
@@ -214,16 +237,40 @@ public class MainSceneController : MonoBehaviour
         if (stationIndex < 0 || stationIndex >= radioStations.Count) return;
 
         currentStationIndex = stationIndex;
-        radioStreamer.PlayStream(radioStations[currentStationIndex].url);
-        Settings.SetCurrentStationName(radioStations[currentStationIndex].name);
         
-        // Update screensaver with current station image
-        UpdateScreensaverStationImage();
+        // In Remote mode, send command to Player
+        if (isRemoteMode)
+        {
+            SendCommandToPlayer($"SELECT_STATION:{stationIndex}");
+        }
+        else
+        {
+            // In Player mode, play locally
+            radioStreamer.PlayStream(radioStations[currentStationIndex].url);
+            Settings.SetCurrentStationName(radioStations[currentStationIndex].name);
+            
+            // Update screensaver with current station image
+            UpdateScreensaverStationImage();
+        }
     }
 
     public void ToggleMute()
     {
-        radioStreamer.ToggleMuteStream();
+        if (isRemoteMode)
+        {
+            // In Remote mode, send command to Player
+            bool currentlyMuted = muteButtonMuted.activeSelf;
+            string command = currentlyMuted ? "UNMUTE" : "MUTE";
+            SendCommandToPlayer(command);
+            
+            // Optimistically update UI (will be synced on next poll)
+            UpdateMuteButton(!currentlyMuted);
+        }
+        else
+        {
+            // In Player mode, toggle locally
+            radioStreamer.ToggleMuteStream();
+        }
     }
     
     void SetupMuteButton()
@@ -243,12 +290,28 @@ public class MainSceneController : MonoBehaviour
     
     void Update()
     {
-        if (stationNameText != null && radioStations.Count > 0)
+        if (stationNameText != null && radioStations.Count > 0 && !isRemoteMode)
         {
             stationNameText.text = radioStations[currentStationIndex].name;
         }
         
         DetectUITouch();
+        
+        // Poll for state updates in Remote mode
+        if (isRemoteMode && !string.IsNullOrEmpty(Settings.GetPlayerIPAddress()))
+        {
+            statePollTimer += Time.deltaTime;
+            if (statePollTimer >= STATE_POLL_INTERVAL)
+            {
+                statePollTimer = 0f;
+                
+                // Only poll if screensaver is not active
+                if (!screensaverController.IsScreensaverActive())
+                {
+                    PollPlayerState();
+                }
+            }
+        }
     }
     
     void DetectUITouch()
@@ -308,19 +371,43 @@ public class MainSceneController : MonoBehaviour
 
     public void OnRemote()
     {
-        // No ip-address yet configured? and  can we connect to the player
-        if (Settings.GetPlayerIPAddress().Length == 0 || !TestConnectionToPlayer())
+        // No ip-address yet configured?
+        if (Settings.GetPlayerIPAddress().Length == 0)
         {
             OnSettings();
+            return;
         }
 
-        // switching from being the Remote to being the Player
-        if (TestConnectionToPlayer())
+        // Switch to Remote mode (test connection async)
+        SwitchToRemoteModeAsync();
+    }
+    
+    async void SwitchToRemoteModeAsync()
+    {
+        string playerIP = Settings.GetPlayerIPAddress();
+        
+        // Test connection first
+        bool connected = await networkManager.TestConnection(playerIP);
+        
+        if (!connected)
         {
-            Settings.SetOperatingMode(Settings.OperatingMode.Remote);
-            remoteButton.SetActive(false);
-            playerButton.SetActive(true);
+            Debug.LogWarning("Cannot connect to player, opening settings");
+            OnSettings();
+            return;
         }
+
+        // switching from being the Player to being the Remote
+        Settings.SetOperatingMode(Settings.OperatingMode.Remote);
+        remoteButton.SetActive(false);
+        playerButton.SetActive(true);
+        radioStreamer.StopStream();
+        isRemoteMode = true;
+        
+        // Stop listener if it was running
+        networkManager.StopListener();
+        
+        // Immediately poll for initial state
+        PollPlayerState();
     }
 
     public void OnPlayer()
@@ -329,6 +416,15 @@ public class MainSceneController : MonoBehaviour
         Settings.SetOperatingMode(Settings.OperatingMode.Player);
         remoteButton.SetActive(true);
         playerButton.SetActive(false);
+        isRemoteMode = false;
+        
+        // Stop any remote polling
+        statePollTimer = 0f;
+        
+        // Start listening for remote commands
+        networkManager.StartListener();
+        SetupNetworkCallbacks();
+        
         if (radioStations.Count > 0)
         {
             SelectStation(currentStationIndex);
@@ -344,10 +440,27 @@ public class MainSceneController : MonoBehaviour
 
     public void OnSettingsTest()
     {
-        if (TestConnectionToPlayer())
+        TestConnectionToPlayerAsync();
+    }
+
+    async void TestConnectionToPlayerAsync()
+    {
+        string playerIP = playerIPAddressInputField.text;
+        if (string.IsNullOrEmpty(playerIP))
+        {
+            Debug.LogWarning("No player IP address provided");
+            settingsTestResultText.text = "Error: No IP";
+            return;
+        }
+        
+        settingsTestResultText.text = "Testing...";
+        
+        bool result = await networkManager.TestConnection(playerIP);
+        
+        if (result)
         {
             settingsTestResultText.text = "OK";
-            Settings.SetPlayerIPAddress(playerIPAddressInputField.text);
+            Settings.SetPlayerIPAddress(playerIP);
         }
         else
         {
@@ -355,16 +468,13 @@ public class MainSceneController : MonoBehaviour
         }
     }
 
-    bool TestConnectionToPlayer()
-    {
-        return true;
-    }
-
     public void OnSettingsBack()
     {
-        if (TestConnectionToPlayer())
+        // Just save the IP if it's been entered
+        string playerIP = playerIPAddressInputField.text;
+        if (!string.IsNullOrEmpty(playerIP))
         {
-            Settings.SetPlayerIPAddress(playerIPAddressInputField.text);
+            Settings.SetPlayerIPAddress(playerIP);
         }
         settingsPanel.SetActive(false);
     }
@@ -377,6 +487,107 @@ public class MainSceneController : MonoBehaviour
 #else
         Application.Quit(); 
 #endif
+    }
+    
+    void SetupNetworkCallbacks()
+    {
+        // Setup callbacks for when network commands are received (Player mode)
+        networkManager.OnStationSelected += (cmd, stationIndex) =>
+        {
+            Debug.Log($"Network command received: {cmd}");
+            SelectStation(stationIndex);
+        };
+        
+        networkManager.OnMuteRequested += () =>
+        {
+            Debug.Log("Network command received: MUTE");
+            if (!radioStreamer.IsMuted())
+            {
+                radioStreamer.ToggleMuteStream();
+            }
+        };
+        
+        networkManager.OnUnmuteRequested += () =>
+        {
+            Debug.Log("Network command received: UNMUTE");
+            if (radioStreamer.IsMuted())
+            {
+                radioStreamer.ToggleMuteStream();
+            }
+        };
+        
+        networkManager.OnStateRequested += () =>
+        {
+            // Return current state as: STATION_INDEX:MUTE_STATE
+            string muteState = radioStreamer.IsMuted() ? "MUTED" : "PLAYING";
+            string state = $"STATE:{currentStationIndex}:{muteState}";
+            Debug.Log($"State requested, returning: {state}");
+            return state;
+        };
+    }
+    
+    async void PollPlayerState()
+    {
+        string playerIP = Settings.GetPlayerIPAddress();
+        if (string.IsNullOrEmpty(playerIP))
+            return;
+        
+        string response = await networkManager.SendCommand(playerIP, "GET_STATE");
+        
+        if (response.StartsWith("STATE:"))
+        {
+            ParseAndApplyState(response);
+        }
+        else
+        {
+            Debug.LogWarning($"Unexpected state response: {response}");
+        }
+    }
+    
+    void ParseAndApplyState(string stateResponse)
+    {
+        // Expected format: STATE:stationIndex:muteState
+        string[] parts = stateResponse.Split(':');
+        if (parts.Length != 3)
+        {
+            Debug.LogError($"Invalid state format: {stateResponse}");
+            return;
+        }
+        
+        if (int.TryParse(parts[1], out int stationIndex))
+        {
+            // Update current station index and UI
+            if (stationIndex >= 0 && stationIndex < radioStations.Count)
+            {
+                currentStationIndex = stationIndex;
+                if (stationNameText != null)
+                {
+                    stationNameText.text = radioStations[currentStationIndex].name;
+                }
+                UpdateScreensaverStationImage();
+            }
+        }
+        
+        // Update mute button state
+        bool isMuted = parts[2] == "MUTED";
+        UpdateMuteButton(isMuted);
+    }
+    
+    async void SendCommandToPlayer(string command)
+    {
+        string playerIP = Settings.GetPlayerIPAddress();
+        if (string.IsNullOrEmpty(playerIP))
+        {
+            Debug.LogWarning("No player IP configured");
+            return;
+        }
+        
+        string response = await networkManager.SendCommand(playerIP, command);
+        
+        if (!response.StartsWith("OK"))
+        {
+            Debug.LogWarning($"Command failed: {command} -> {response}");
+        }
     }
 
 }

@@ -42,13 +42,11 @@ public static class Settings
 
     public static string GetPlayerIPAddress()
     {
-        Debug.Log("retrieving ipaddress " + PlayerPrefs.GetString(PREF_PLAYER_IPADDRESS, ""));
         return PlayerPrefs.GetString(PREF_PLAYER_IPADDRESS, "");
     }
 
     public static void SetPlayerIPAddress(string ipAddress)
     {
-        Debug.Log("storing ipaddress " + ipAddress);
         if (ipAddress != null && ipAddress != "")
         {
             PlayerPrefs.SetString(PREF_PLAYER_IPADDRESS, ipAddress);

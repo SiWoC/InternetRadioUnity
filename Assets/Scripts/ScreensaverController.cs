@@ -59,6 +59,11 @@ public class ScreensaverController : MonoBehaviour
         lastInputTime = Time.time;
         Debug.Log("Screensaver timer reset");
     }
+    
+    public bool IsScreensaverActive()
+    {
+        return isScreensaverActive;
+    }
 
     void EnterScreensaver()
     {
