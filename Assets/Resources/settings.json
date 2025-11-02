@@ -1,6 +1,16 @@
 {
     "station": [
         {
+            "name": "All Time Top 40 hits",
+            "url": "https://mediacp.audiostreamen.nl:8150/stream",
+            "image": "/images/alltimehits.png"
+        },
+		{
+			"name": "Radio 10 80s Hits",
+			"url": "https://playerservices.streamtheworld.com/api/livestream-redirect/TLPSTR20.mp3",
+            "image": "/images/radio-10-80s-hits.png"
+		},
+        {
             "name": "Kink",
             "url": "https://playerservices.streamtheworld.com/api/livestream-redirect/KINK.mp3",
             "image": "/images/kink.png"
@@ -102,13 +112,13 @@
 		},
 		{
 			"name": "Radio 3",
-			"url": "https://playerservices.streamtheworld.com/api/livestream-redirect/RADIO3.mp3",
+			"url": "https://icecast.omroep.nl/3fm-bb-mp3",
             "image": "/images/radio-3.png"
 		},
 		{
-			"name": "Radio 10 80s Hits",
-			"url": "https://playerservices.streamtheworld.com/api/livestream-redirect/TLPSTR20.mp3",
-            "image": "/images/radio-10-80s-hits.png"
+			"name": "Testing",
+			"url": "https://live-radio01.mediahubaustralia.com/2TJW/mp3/",
+            "image": "/images/unknown.png"
 		}
-    ]
+	]
 }

@@ -6,6 +6,14 @@ using FMODUnity;
 
 public class FMODRadioStreamer : MonoBehaviour
 {
+    [Header("Audio Route Fix (Android)")]
+    [Tooltip("Enable audio routing fix for devices that default to speaker after reboot (e.g., Moto G5 Plus)")]
+    public bool enableAudioRouteFix = true;
+    
+    [Tooltip("Delay in seconds before applying audio route fix. Try 0 first, increase if needed for auto-start scenarios.")]
+    [Range(0f, 10f)]
+    public float audioRouteFixDelay = 0f;
+    
     private string streamUrl = "";
     private bool isMuted = false;
     private FMOD.Sound sound;
@@ -16,6 +24,7 @@ public class FMODRadioStreamer : MonoBehaviour
     private bool isInitialized = false;
     private bool hasSound = false;
     private bool hasChannel = false;
+    private bool wasPlayingBeforePause = false;
     
     public System.Action<bool> OnMuteStateChanged;
     
@@ -44,9 +53,34 @@ public class FMODRadioStreamer : MonoBehaviour
     {
         // App is being quit - ensure complete cleanup
         StopStream();
+        system.mixerResume();
+    }
+    
+    void OnApplicationPause(bool pauseStatus)
+    {
 #if !UNITY_EDITOR
-        UnityEngine.Debug.Log("FMOD CoreSystem.release()");
-        RuntimeManager.CoreSystem.release();
+        if (pauseStatus)
+        {
+            // App is being paused (screen locked, switched to another app, etc.)
+            // Stop stream to save bandwidth and prevent stale buffers
+            wasPlayingBeforePause = isPlaying;
+            if (isPlaying)
+            {
+                UnityEngine.Debug.Log("App paused - stopping stream to save bandwidth");
+                StopStream();
+            }
+        }
+        else
+        {
+            // App is resuming
+            // Restart stream if it was playing before pause
+            if (wasPlayingBeforePause)
+            {
+                UnityEngine.Debug.Log("App resumed - restarting stream");
+                PlayStream();
+                wasPlayingBeforePause = false;
+            }
+        }
 #endif
     }
 
@@ -102,7 +136,23 @@ public class FMODRadioStreamer : MonoBehaviour
             return;
         }
         
-        StartCoroutine(LoadAndPlayStream());
+        StartCoroutine(ApplyAudioRouteFixAndPlay());
+    }
+    
+    IEnumerator ApplyAudioRouteFixAndPlay()
+    {
+        if (enableAudioRouteFix)
+        {
+            if (audioRouteFixDelay > 0f)
+            {
+                UnityEngine.Debug.Log($"Waiting {audioRouteFixDelay}s before applying audio route fix...");
+                yield return new WaitForSeconds(audioRouteFixDelay);
+            }
+            
+            AudioRouteFixer.RetriggerAudioRouting();
+        }
+        
+        yield return StartCoroutine(LoadAndPlayStream());
     }
 
     IEnumerator LoadAndPlayStream()

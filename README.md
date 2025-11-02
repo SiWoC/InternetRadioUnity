@@ -7,6 +7,7 @@ A Unity-based internet radio streaming application designed to run on one of my 
 ## Features
 
 - **Internet Radio** - Stream radio stations using FMOD audio engine
+- **Remote Control** - Install the app on two devices and control one with the other
 - **Custom Station Library** - Configure multiple radio stations with logos through a "hardcoded json" before building.
 - **Mute/Unmute Control** - Toggle audio playback (current build mutes the stream which means it keeps consuming data, but prevents having to listen to the start commercial on resume)
 - **Screensaver Mode** - Automatic screensaver with station artwork

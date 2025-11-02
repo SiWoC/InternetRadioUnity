@@ -8,6 +8,7 @@ public class ScreensaverController : MonoBehaviour
 
     public Button screensaverButton; // Full-screen button for touch detection
     public Image stationImage; // Bouncing station image (child of button)
+    public Sprite unknown;
     public GameObject settingsPanel;
 
     private float inactivityTimeout = 10f; // seconds before screensaver activates
@@ -207,7 +208,7 @@ public class ScreensaverController : MonoBehaviour
         else
         {
             // TODO create default image
-            Debug.Log("Screensaver: No station image available, hiding image");
+            stationImage.sprite = unknown;
         }
     }
     

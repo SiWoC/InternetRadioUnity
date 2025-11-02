@@ -13,6 +13,7 @@ public static class Settings
     private const string PREF_CURRENT_STATION = "CurrentStation";
     private const string PREF_OPERATING_MODE = "OperatingMode"; // Player or Remote
     private const string PREF_PLAYER_IPADDRESS = "PlayerIPAddress";
+    private const string PREF_TESTURL = "TestURL";
 
     public static string GetCurrentStationName()
     {
@@ -50,6 +51,20 @@ public static class Settings
         if (ipAddress != null && ipAddress != "")
         {
             PlayerPrefs.SetString(PREF_PLAYER_IPADDRESS, ipAddress);
+        }
+        PlayerPrefs.Save();
+    }
+
+    public static string GetTestURL()
+    {
+        return PlayerPrefs.GetString(PREF_TESTURL, "");
+    }
+
+    public static void SetTestURL(string testURL)
+    {
+        if (testURL != null && testURL != "")
+        {
+            PlayerPrefs.SetString(PREF_TESTURL, testURL);
         }
         PlayerPrefs.Save();
     }

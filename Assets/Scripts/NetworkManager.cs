@@ -22,6 +22,7 @@ public class NetworkManager : MonoBehaviour
     
     // Callback for when commands are received
     public event Action<string, int> OnStationSelected;
+    public event Action<string, string> OnTestURL;
     public event Action OnMuteRequested;
     public event Action OnUnmuteRequested;
     public event Func<string> OnStateRequested;
@@ -152,9 +153,9 @@ public class NetworkManager : MonoBehaviour
             {
                 return "PONG";
             }
-            else if (command.StartsWith("SELECT_STATION:"))
+            else if (command.StartsWith("SELECT_STATION|"))
             {
-                string[] parts = command.Split(':');
+                string[] parts = command.Split('|');
                 if (parts.Length == 2 && int.TryParse(parts[1], out int stationIndex))
                 {
                     // Queue action for main thread
@@ -162,6 +163,17 @@ public class NetworkManager : MonoBehaviour
                     return "OK";
                 }
                 return "ERROR:Invalid station index";
+            }
+            else if (command.StartsWith("TESTURL|"))
+            {
+                string[] parts = command.Split('|');
+                if (parts.Length == 2)
+                {
+                    // Queue action for main thread
+                    mainThreadActions.Enqueue(() => OnTestURL?.Invoke(command, parts[1]));
+                    return "OK";
+                }
+                return "ERROR:Invalid number of parts";
             }
             else if (command == "MUTE")
             {
