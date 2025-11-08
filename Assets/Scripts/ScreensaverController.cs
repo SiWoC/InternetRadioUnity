@@ -20,6 +20,8 @@ public class ScreensaverController : MonoBehaviour
     private RectTransform stationImageRect;
     private RectTransform screensaverButtonRect;
     private Vector2 screenBounds;
+    private int currentWidth;
+    private int currentHeight;
     
     void Start()
     {
@@ -27,14 +29,22 @@ public class ScreensaverController : MonoBehaviour
         screensaverButtonRect = screensaverButton.GetComponent<RectTransform>();
         screensaverButton.gameObject.SetActive(false); // Start hidden
         stationImageRect = stationImage.GetComponent<RectTransform>();
-        screenBounds = new Vector2(
-            screensaverButtonRect.rect.width * 0.5f - stationImageRect.rect.width * 0.5f,
-            screensaverButtonRect.rect.height * 0.5f - stationImageRect.rect.height * 0.5f
-        );
+        
+        currentWidth = Screen.width;
+        currentHeight = Screen.height;
+        UpdateScreenBounds();
     }
 
     void Update()
     {
+        // Check for screen dimension changes
+        if (Screen.width != currentWidth || Screen.height != currentHeight)
+        {
+            currentWidth = Screen.width;
+            currentHeight = Screen.height;
+            UpdateScreenBounds();
+        }
+        
         // Check if screensaver should activate
         if (!isScreensaverActive && Time.time - lastInputTime > inactivityTimeout && !settingsPanel.activeSelf)
         {
@@ -210,6 +220,14 @@ public class ScreensaverController : MonoBehaviour
             // TODO create default image
             stationImage.sprite = unknown;
         }
+    }
+    
+    void UpdateScreenBounds()
+    {
+        screenBounds = new Vector2(
+            screensaverButtonRect.rect.width * 0.5f - stationImageRect.rect.width * 0.5f,
+            screensaverButtonRect.rect.height * 0.5f - stationImageRect.rect.height * 0.5f
+        );
     }
     
 }

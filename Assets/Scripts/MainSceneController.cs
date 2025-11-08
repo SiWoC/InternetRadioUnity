@@ -12,6 +12,9 @@ public class SettingsData
 
 public class MainSceneController : MonoBehaviour
 {
+    [Header("Canvas")]
+    public Canvas uiCanvas;
+
     [Header("Main Panel")]
     public Button muteButton;
     public GameObject muteButtonPlaying;
@@ -19,6 +22,7 @@ public class MainSceneController : MonoBehaviour
     public GameObject remoteButton;
     public GameObject playerButton;
     public TextMeshProUGUI stationNameText;
+    public RectTransform stationScrollView;
     public Transform stationListParent;
     public GameObject stationButtonPrefab;
     public TextMeshProUGUI ipAddressText;
@@ -34,11 +38,14 @@ public class MainSceneController : MonoBehaviour
     public ScreensaverController screensaverController;
     public NetworkManager networkManager;
 
+    private CanvasScaler canvasScaler;
     private List<RadioStation> radioStations = new List<RadioStation>();
     private int currentStationIndex = 0;
     private float statePollTimer = 0f;
     private const float STATE_POLL_INTERVAL = 2.5f; // seconds
     private bool isRemoteMode = false;
+    private int currentWidth;
+    private int currentHeight;
 
     void Awake()
     {
@@ -48,17 +55,10 @@ public class MainSceneController : MonoBehaviour
     
     void Start()
     {
-        if (radioStreamer == null)
-        {
-            Debug.LogError("FMODRadioStreamer not assigned! Please assign it in the Inspector.");
-            return;
-        }
-        
-        if (networkManager == null)
-        {
-            Debug.LogError("NetworkManager not assigned! Please assign it in the Inspector.");
-            return;
-        }
+        canvasScaler = uiCanvas.GetComponent<CanvasScaler>();
+        currentWidth = Screen.width;
+        currentHeight = Screen.height;
+        UpdateLayoutForOrientation();        
         
         CreateStationButtons(); // also sets currentStationIndex
         settingsPanel.SetActive(false);
@@ -195,38 +195,6 @@ public class MainSceneController : MonoBehaviour
         EnsureContentWidthForScrolling();
     }
     
-    void EnsureContentWidthForScrolling()
-    {
-        RectTransform contentRect = stationListParent.GetComponent<RectTransform>();
-        GridLayoutGroup gridLayout = contentRect.GetComponent<GridLayoutGroup>();
-        
-        // Let the Grid Layout Group calculate the natural size first
-        LayoutRebuilder.ForceRebuildLayoutImmediate(contentRect);
-        
-        // Calculate required width based on grid layout with 2 rows
-        int stationCount = radioStations.Count;
-        float cellWidth = gridLayout.cellSize.x;
-        float spacing = gridLayout.spacing.x;
-        
-        // Calculate number of columns needed (3 rows, so stations per row)
-        int columns = Mathf.CeilToInt(stationCount / 3f);
-        
-        // Calculate total width: number of columns * cell width + spacing between columns
-        float totalWidth = (columns * cellWidth) + ((columns - 1) * spacing);
-        
-        // Add some extra padding for better scrolling experience
-        float extraPadding = 100f;
-        float finalWidth = totalWidth + extraPadding;
-        
-        // For anchored content, we need to set the sizeDelta to the difference
-        // between desired size and current anchored size
-        float currentAnchoredWidth = contentRect.rect.width;
-        float widthDifference = finalWidth - currentAnchoredWidth;
-        
-        // Set the content width to ensure scrolling is enabled
-        contentRect.sizeDelta = new Vector2(widthDifference, contentRect.sizeDelta.y);
-    }
-    
     void SelectStation(int stationIndex)
     {
         if (stationIndex < 0 || stationIndex >= radioStations.Count) return;
@@ -292,6 +260,13 @@ public class MainSceneController : MonoBehaviour
     
     void Update()
     {
+        if (Screen.width != currentWidth || Screen.height != currentHeight)
+        {
+            currentWidth = Screen.width;
+            currentHeight = Screen.height;
+            UpdateLayoutForOrientation();
+        }
+
         if (radioStations.Count > 0 && !isRemoteMode)
         {
             stationNameText.text = radioStations[currentStationIndex].name;
@@ -601,4 +576,81 @@ public class MainSceneController : MonoBehaviour
         }
     }
 
+    void UpdateLayoutForOrientation()
+    {
+        bool isLandscape = Screen.width > Screen.height;
+        GridLayoutGroup grid = stationListParent.GetComponent<GridLayoutGroup>();
+        
+        if (isLandscape)
+        {
+            canvasScaler.matchWidthOrHeight = 0.6f;
+            stationNameText.rectTransform.offsetMin = new Vector2(320f, 860f);
+            stationNameText.rectTransform.offsetMax = new Vector2(-150f, -60f);
+            stationScrollView.offsetMax = new Vector2(-150f, -280f);
+            grid.constraintCount = 3;
+        }
+        else // portrait
+        {
+
+            /*
+            stationNameText.rectTransform.offsetMin = new Vector2(150f, 1200f);
+            stationNameText.rectTransform.offsetMax = new Vector2(-150f, -220f);
+            stationScrollView.offsetMax = new Vector2(-150f, -720f);
+            */
+
+            canvasScaler.matchWidthOrHeight = 0.0f;
+            float screenHeight = Screen.height;
+            
+            // Fixed margins
+            float fixedTopMargin = 220f;
+            float fixedBottomMargin = 150f;
+            
+            // Flexible space to distribute
+            float flexibleSpace = screenHeight - fixedTopMargin - fixedBottomMargin;
+            
+            // Proportional distribution (500:1050 ratio)
+            float nameHeightRatio = 500f / 1550f;
+            float scrollHeightRatio = 1050f / 1550f;
+            
+            // Calculate heights
+            float nameHeight = flexibleSpace * nameHeightRatio;
+            float scrollHeight = flexibleSpace * scrollHeightRatio;
+            Debug.Log($"nameHeight: {nameHeight}, scrollHeight: {scrollHeight}");
+            
+            // stationNameText offsets
+            float nameBottom = screenHeight - fixedTopMargin - nameHeight;
+            stationNameText.rectTransform.offsetMin = new Vector2(150f, nameBottom);
+            stationNameText.rectTransform.offsetMax = new Vector2(-150f, -fixedTopMargin);
+            
+            // stationScrollView offsets
+            float scrollTop = fixedTopMargin + nameHeight;
+            stationScrollView.offsetMax = new Vector2(-150f, -scrollTop);
+            
+            float cellHeight = grid.cellSize.y;
+            float spacingHeight = grid.spacing.y;
+            int rows = Mathf.FloorToInt(scrollHeight / (cellHeight + spacingHeight));
+            grid.constraintCount = rows;
+        }
+        EnsureContentWidthForScrolling();
+    }
+
+    void EnsureContentWidthForScrolling()
+    {
+        RectTransform contentRect = stationListParent.GetComponent<RectTransform>();
+        GridLayoutGroup gridLayout = contentRect.GetComponent<GridLayoutGroup>();
+
+        Canvas.ForceUpdateCanvases();
+        LayoutRebuilder.ForceRebuildLayoutImmediate(contentRect);
+
+        int rows = gridLayout.constraintCount;
+        int columns = Mathf.CeilToInt(radioStations.Count / (float)rows);
+
+        float cellWidth = gridLayout.cellSize.x;
+        float spacing = gridLayout.spacing.x;
+
+        float totalWidth = (columns * cellWidth) + ((columns - 1) * spacing);
+
+        contentRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, totalWidth);
+    }
+    
 }

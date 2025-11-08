@@ -1214,10 +1214,10 @@ RectTransform:
   - {fileID: 1851392662}
   m_Father: {fileID: 157229280}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 645}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &221870141
 MonoBehaviour:
@@ -1242,7 +1242,7 @@ MonoBehaviour:
   m_CellSize: {x: 200, y: 200}
   m_Spacing: {x: 10, y: 10}
   m_Constraint: 2
-  m_ConstraintCount: 3
+  m_ConstraintCount: 5
 --- !u!1001 &378597704
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1577,12 +1577,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b13ec61dbea6ad445ad03e7aaed1c677, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RadioUI
+  uiCanvas: {fileID: 1906791804}
   muteButton: {fileID: 919437225}
   muteButtonPlaying: {fileID: 1534312474}
   muteButtonMuted: {fileID: 2059452799}
   remoteButton: {fileID: 1691227317}
   playerButton: {fileID: 950890035}
   stationNameText: {fileID: 1133282510}
+  stationScrollView: {fileID: 1628653578}
   stationListParent: {fileID: 221870140}
   stationButtonPrefab: {fileID: 2427346418612808090, guid: c8779a8c9a3adae429551006858b6d20, type: 3}
   ipAddressText: {fileID: 895430345}
@@ -1593,6 +1595,7 @@ MonoBehaviour:
   radioStreamer: {fileID: 1617465672}
   screensaverController: {fileID: 95970291}
   networkManager: {fileID: 151257000}
+  canvasScaler: {fileID: 0}
 --- !u!224 &497703648 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 3713523046474188644, guid: c8779a8c9a3adae429551006858b6d20, type: 3}
@@ -3247,11 +3250,11 @@ RectTransform:
   - {fileID: 1534312475}
   m_Father: {fileID: 1658841519}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -730, y: 400}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 150, y: -60}
   m_SizeDelta: {x: 160, y: 160}
-  m_Pivot: {x: 0.5, y: 0.5}
+  m_Pivot: {x: 0, y: 1}
 --- !u!114 &919437225
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3585,10 +3588,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1658841519}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 100, y: 400}
-  m_SizeDelta: {x: 1420, y: 160}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 490}
+  m_SizeDelta: {x: -300, y: -1420}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1133282510
 MonoBehaviour:
@@ -3637,7 +3640,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 95.25
+  m_fontSize: 113.8
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -4958,10 +4961,10 @@ RectTransform:
   - {fileID: 157229280}
   m_Father: {fileID: 1658841519}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -50}
-  m_SizeDelta: {x: 1620, y: 645}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: -285}
+  m_SizeDelta: {x: -300, y: -870}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1628653579
 MonoBehaviour:
@@ -5837,12 +5840,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.CanvasScaler
-  m_UiScaleMode: 0
+  m_UiScaleMode: 1
   m_ReferencePixelsPerUnit: 100
   m_ScaleFactor: 1
-  m_ReferenceResolution: {x: 800, y: 600}
+  m_ReferenceResolution: {x: 1080, y: 1920}
   m_ScreenMatchMode: 0
-  m_MatchWidthOrHeight: 0
+  m_MatchWidthOrHeight: 0.6
   m_PhysicalUnit: 3
   m_FallbackScreenDPI: 96
   m_DefaultSpriteDPI: 96
