@@ -11,7 +11,7 @@ public class ScreensaverController : MonoBehaviour
     public Sprite unknown;
     public GameObject settingsPanel;
 
-    private float inactivityTimeout = 10f; // seconds before screensaver activates
+    private float inactivityTimeout = 60f; // seconds before screensaver activates
     private float bounceSpeed = 200f;
 
     private bool isScreensaverActive = false;

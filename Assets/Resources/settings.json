@@ -2,7 +2,7 @@
     "station": [
         {
             "name": "All Time Top 40 hits",
-            "url": "https://mediacp.audiostreamen.nl:8150/stream",
+            "url": "https://stream.alltimehits.eu/listen.mp3",
             "image": "/images/alltimehits.png"
         },
 		{

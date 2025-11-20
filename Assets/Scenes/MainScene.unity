@@ -886,6 +886,50 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: c8779a8c9a3adae429551006858b6d20, type: 3}
+--- !u!1 &190398927
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 190398929}
+  - component: {fileID: 190398928}
+  m_Layer: 0
+  m_Name: StreamAnalyzer
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!114 &190398928
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 190398927}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 83ed0bf86c738644286c80d8749429b5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::StreamAnalyzer
+--- !u!4 &190398929
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 190398927}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &213237199
 GameObject:
   m_ObjectHideFlags: 0
@@ -1595,7 +1639,6 @@ MonoBehaviour:
   radioStreamer: {fileID: 1617465672}
   screensaverController: {fileID: 95970291}
   networkManager: {fileID: 151257000}
-  canvasScaler: {fileID: 0}
 --- !u!224 &497703648 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 3713523046474188644, guid: c8779a8c9a3adae429551006858b6d20, type: 3}
@@ -6581,3 +6624,4 @@ SceneRoots:
   - {fileID: 1617465671}
   - {fileID: 95970292}
   - {fileID: 151257001}
+  - {fileID: 190398929}
